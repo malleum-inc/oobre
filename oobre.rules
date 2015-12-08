@@ -1,0 +1,5 @@
+dport=80 hello=^(GET|POST|HEAD|OPTIONS) forward=tcp:127.0.0.1:80
+dport=80 hello=SSH forward=tcp:127.0.0.1:22
+dport=81 hello=ehlo knock_forward=tcp:127.0.0.1:80
+dport=81 hello=yalla knock_forward=tcp:127.0.0.1:80
+factory=echoserver.EchoFactory
