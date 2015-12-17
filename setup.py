@@ -60,5 +60,6 @@ setup(
     package_dir={'': 'src'},
     libraries=[libknock],
     scripts=['client/knock'],
+    requires=['twisted'],
     cmdclass={'build_clib': KnockBuilder}, requires=['twisted']
 )

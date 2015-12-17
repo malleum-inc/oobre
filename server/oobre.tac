@@ -1,3 +1,4 @@
+import atexit
 import subprocess
 import signal
 from twisted.application import internet, service
@@ -54,7 +55,7 @@ def get_application():
     routerService = internet.TCPServer(LISTEN_PORT, Router(RULE_FILE))
     routerService.setServiceParent(application)
 
-    #atexit.register(restore_ipt)
+    atexit.register(restore_ipt)
     register_ipt()
 
     return application
