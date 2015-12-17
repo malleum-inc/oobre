@@ -3,13 +3,11 @@ import shlex
 from collections import defaultdict, namedtuple
 import re
 
-from twisted.protocols.portforward import ProxyFactory as KnockingProxyFactory
-from oobre.protocols.portforwarder import ProxyFactory
-from oobre.protocols.routingprotocol import RoutingProtocolFactory
+from src.oobre.protocols.portforwarder import ProxyFactory
+from src.oobre.protocols.routingprotocol import RoutingProtocolFactory
 
 
 __author__ = 'root'
-
 
 routing_rules = defaultdict(list)
 
@@ -17,7 +15,6 @@ RoutingCriteria = namedtuple('RoutingCriteria', ['protocol', 'src', 'dst', 'spor
 
 
 class RouteMatcher(object):
-
     def __init__(self, criteria):
         self._criteria = criteria
         self._matcher = re.compile(self._criteria.hello or '.')
@@ -56,45 +53,64 @@ class RoutingRule(object):
         'exec',
         'file',
         'factory',
-        'knock_forward'
+        'knock'
     }
 
-    def __init__(self, rule):
+    def __init__(self, options):
         self._factory = None
+        self._passthrough = True
+        self._criteria = None
+        self._matcher = None
 
-        options = dict([o.split('=', 1) for o in shlex.split(rule)])
-        options = {k: self._parse_port(v) if 'port' in k else v for k, v in options.iteritems()}
+        if isinstance(options, basestring):
+            options = dict([o.split('=', 1) for o in shlex.split(options)])
+            options = {k: self._parse_port(v) if 'port' in k else v for k, v in options.iteritems()}
 
+        # Make sure there is an action that corresponds to a rule, otherwise croak.
         if not self.actions.intersection(options):
             raise RuntimeError('You must specify one of the following options: protocol, forward, exec, or file')
-        elif options.get('factory'):
-            self._factory = self._import_class(options['factory'])()
-        elif options.get('forward'):
-            protocol, host, port = options['forward'].lower().split(':', 2)
-            if protocol == 'tcp':
-                self._factory = ProxyFactory(host, int(port))
-            elif protocol == 'udp':
-                raise NotImplementedError('The UDP protocol forwarder has not been implemented yet.')
-            else:
-                raise ValueError('Invalid protocol forwarding option (%r). Must be either tcp or udp' % protocol)
-        elif options.get('knock_forward'):
-            protocol, host, port = options['knock_forward'].lower().split(':', 2)
-            if protocol == 'tcp':
-                self._factory = KnockingProxyFactory(host, int(port))
-            elif protocol == 'udp':
-                raise NotImplementedError('The UDP protocol forwarder has not been implemented yet.')
-            else:
-                raise ValueError('Invalid protocol forwarding option (%r). Must be either tcp or udp' % protocol)
-        elif options.get('exec'):
-            raise NotImplementedError('The exec option has not been implemented yet.')
-        elif options.get('file'):
-            raise NotImplementedError('The file option has not been implemented yet.')
+
+        # Does this protocol require a knock?
+        knock = options.get('knock')
+
+        # The passthrough option determines whether the bytes used to identify the protocol will be sent to the target
+        # protocol handler or will be consumed by the initial protocol handler. Port knocking would require the initial
+        # protocol handler to consume the first few bytes.
+        self._passthrough = bool(options.get('passthrough', True) and not knock)
+
+        if knock:
+            # Get the knocking protocol key for our knocking router
+            rrs = routing_rules[get_knock_rule_key(options.get('dport'), options.get('protocol'), options.get('knock'))]
+
+            # Make a copy of the original options and get rid of the knock to create our second tier RoutingRule
+            new_options = options.copy()
+            del new_options['knock']
+            rrs.append(RoutingRule(new_options))
+            self._factory = RoutingProtocolFactory(rrs)
+
+            # Now carry on and initialize this RoutingRule with hello=knock
+            options['hello'] = options.pop('knock')
+        else:
+            if options.get('factory'):
+                self._factory = self._import_class(options['factory'])()
+            elif options.get('forward'):
+                protocol, host, port = options['forward'].lower().split(':', 2)
+                if protocol == 'tcp':
+                    self._factory = ProxyFactory(host, int(port))
+                elif protocol == 'udp':
+                    raise NotImplementedError('The UDP protocol forwarder has not been implemented yet.')
+                else:
+                    raise ValueError('Invalid protocol forwarding option (%r). Must be either tcp or udp' % protocol)
+            elif options.get('exec'):
+                raise NotImplementedError('The exec option has not been implemented yet.')
+            elif options.get('file'):
+                raise NotImplementedError('The file option has not been implemented yet.')
 
         self._criteria = RoutingCriteria(**{k: options.get(k) for k in self.criteria_options})
 
         self._matcher = RouteMatcher(self._criteria)
 
-        self._needs_data = bool(options.get('hello') or isinstance(self._factory, KnockingProxyFactory))
+        self._needs_hello = bool(options.get('hello'))
 
     @staticmethod
     def _import_class(name):
@@ -117,8 +133,12 @@ class RoutingRule(object):
         return self._matcher.is_match(connection, match_hello)
 
     @property
-    def needs_data(self):
-        return self._needs_data
+    def passthrough(self):
+        return self._passthrough
+
+    @property
+    def has_hello(self):
+        return self._needs_hello
 
     def _parse_port(self, port):
         if port is None:
@@ -138,7 +158,11 @@ class RoutingRule(object):
 
 
 def get_rule_key(port, protocol):
-    return '%s/%s' % (port, (protocol or 'tcp').lower()) if port or protocol else None
+    return '%s/%s' % (port, (protocol or 'tcp').lower()) if port else None
+
+
+def get_knock_rule_key(port, protocol, knock):
+    return '%s/%s/%s' % (port, (protocol or 'tcp').lower(), knock) if port else '*/tcp/%s' % knock
 
 
 def parse_rules(rule_file):
@@ -163,7 +187,7 @@ def get_protocol(connection):
     # Check for strict matching routing rules
     if num_rr == 1:
         if rrs[0].matches(connection, False):
-            if rrs[0].needs_data:
+            if rrs[0].has_hello:
                 return RoutingProtocolFactory(rrs).buildProtocol(connection.address, connection)
             return rrs[0].factory.buildProtocol(connection.address)
     elif num_rr > 1:

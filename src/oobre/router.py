@@ -1,7 +1,7 @@
 from twisted.internet import protocol
 
-from oobre.conntrack import get_connection
-from oobre.ruleengine import parse_rules, get_protocol
+from src.oobre.conntrack import get_connection
+from src.oobre.ruleengine import parse_rules, get_protocol
 
 
 __author__ = 'root'

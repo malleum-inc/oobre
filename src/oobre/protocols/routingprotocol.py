@@ -1,7 +1,6 @@
 from twisted.internet import protocol
-from twisted.protocols.portforward import ProxyFactory as KnockingProxyFactory
 
-from oobre.protocols.portforwarder import ProxyFactory
+from src.oobre.protocols.portforwarder import ProxyFactory
 
 
 __author__ = 'root'
@@ -18,16 +17,17 @@ class RoutingProtocol(protocol.Protocol):
         self._connection.hello = data
         for rr in self._rules:
             if rr.matches(self._connection):
-                if isinstance(rr.factory, ProxyFactory):
-                    client = rr.factory.buildProtocol(self._connection.address, data)
+                if isinstance(rr.factory, RoutingProtocolFactory):
+                    client = rr.factory.buildProtocol(self._connection.address, self._connection)
                     self._swap_transport(client)
-                elif isinstance(rr.factory, KnockingProxyFactory):
-                    client = rr.factory.buildProtocol(self._connection.address)
+                elif isinstance(rr.factory, ProxyFactory):
+                    client = rr.factory.buildProtocol(self._connection.address, data)
                     self._swap_transport(client)
                 else:
                     client = rr.factory.buildProtocol(self._connection.address)
                     self._swap_transport(client)
-                    client.dataReceived(data)
+                    if rr.passthrough:
+                        client.dataReceived(data)
                 break
         if not client:
             print '*** Got unknown %s connection from %s on port %s with hello=%r. ***' % (
@@ -53,6 +53,8 @@ class RoutingProtocolFactory(protocol.Factory):
         self.rules = rules
 
     def buildProtocol(self, addr, connection=None):
+        if not connection:
+            raise Exception()
         protocol = RoutingProtocol()
         protocol.setConnection(connection)
         protocol.setRules(self.rules)
