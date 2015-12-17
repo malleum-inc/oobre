@@ -3,11 +3,20 @@ import shlex
 from collections import defaultdict, namedtuple
 import re
 
-from src.oobre.protocols.portforwarder import ProxyFactory
-from src.oobre.protocols.routingprotocol import RoutingProtocolFactory
+from oobre.protocols.portforwarder import ProxyFactory
+from oobre.protocols.routingprotocol import RoutingProtocolFactory
 
 
-__author__ = 'root'
+__author__ = 'Nadeem Douba'
+__copyright__ = 'Copyright 2012, OOBRE Project'
+__credits__ = []
+
+__license__ = 'GPL'
+__version__ = '0.1'
+__maintainer__ = 'Nadeem Douba'
+__email__ = 'ndouba@gmail.com'
+__status__ = 'Development'
+
 
 routing_rules = defaultdict(list)
 

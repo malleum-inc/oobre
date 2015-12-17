@@ -2,6 +2,17 @@ from distutils.core import setup
 from distutils.command.build_clib import build_clib
 
 import os
+import sys
+
+__author__ = 'Nadeem Douba'
+__copyright__ = 'Copyright 2012, OOBRE Project'
+__credits__ = []
+
+__license__ = 'GPL'
+__version__ = '0.1'
+__maintainer__ = 'Nadeem Douba'
+__email__ = 'ndouba@gmail.com'
+__status__ = 'Development'
 
 
 class KnockBuilder(build_clib):
@@ -27,21 +38,27 @@ class KnockBuilder(build_clib):
 
     def build_libraries(self, libraries):
         # hack to create a shared object instead of a static archive
+        if 'linux' in sys.platform:
+            self.compiler.linker_so.append('-ldl')
+        elif 'darwin' in sys.platform:
+            self.compiler.linker_so.remove('-bundle')
+            self.compiler.linker_so.extend(['-shared', '-dynamic', '-fPIC'])
+
         self.compiler.create_static_lib = self.compiler.link_shared_lib
+
         build_clib.build_libraries(self, libraries)
 
 
 libknock = ('knock', {'sources': ['client/knock.c']})
-os.environ['LDFLAGS'] = '-ldl'
 
 setup(
     name='oobre',
     version='1.0',
     description='Out-Of-Band Reconnaissance Engine',
-    packages=['oobre'],
+    packages=['oobre', 'oobre.protocols'],
     package_data={'oobre':['*.so']},
     package_dir={'': 'src'},
     libraries=[libknock],
     scripts=['client/knock'],
-    cmdclass={'build_clib': KnockBuilder}
+    cmdclass={'build_clib': KnockBuilder}, requires=['twisted']
 )

@@ -1,5 +1,0 @@
-dport=80 hello=^(GET) forward=tcp:127.0.0.1:80
-dport=80 hello=SSH forward=tcp:127.0.0.1:22 knock=^hello$
-dport=1337 factory=eliteserver.EliteFactory
-factory=smtp.SmtpFactory hello=(?:helo|ehlo)(?i) dport=25,587
-factory=echoserver.EchoFactory
