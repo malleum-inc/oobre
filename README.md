@@ -1,3 +1,29 @@
+# Installation
+
+```console
+easy_install twisted
+pushd deps/pynetfilter_conntrack
+python setup.py install
+popd
+python setup.py install
+```
+
+# Running OOBRE
+
+```console
+cd server
+./start.sh
+```
+
+# Stopping OOBRE
+
+```console
+cd server
+./stop.sh
+```
+
+# Configuring Rules
+
 Rules must contain the following elements:
 
 * Critera (optional): this specifies what OOBRE should look for when determining what action to take on a given port.
@@ -22,7 +48,7 @@ Currently only `tcp` is supported but plans to implement `udp` are ongoing.
 
 The `factory` action instructs OOBRE to use an instance of a twisted python TCP protocol factory to handle the inbound
 connection. The absolute name of the factory class should be provided (i.e. `foo.mod.EchoFactory`). Make sure that the
-python module sits in a directory that`s in your Python sys.path. The format for `factory` directives is:
+python module sits in a directory that's in your Python sys.path. The format for `factory` directives is:
 
 `factory=<some.mod.MyProtoFactory>`
 
