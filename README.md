@@ -26,15 +26,15 @@ python module sits in a directory that`s in your Python sys.path. The format for
 
 `factory=<some.mod.MyProtoFactory>`
 
-With OOBRE you don`t have to dedicate a port to a certain service. It is fully capable of multiplexing protocols
+With OOBRE you don't have to dedicate a port to a certain service. It is fully capable of multiplexing protocols
 provided these protocols expect their clients to send the first set of bytes to the server. The way OOBRE determines
-which action to take is based on the `hello` criteria. For example, the default rule-set below multiplexes SSH and
+which action to take is based on the `hello` criteria. For example, the default rule-set in `server/oobre.rules` multiplexes SSH and
 HTTP over port 80 (note: older version of SSH clients do not send the first few bytes to the server so this may not
 work).
 
-Another thing to note with the rule-sets below is that the SSH server expects the client to send `howdy` before
-initiating the conversation with the backend SSH server. This can be achieved with the `knock` python script which
-gets installed on your machine like so:
+Another thing to note with the rule-sets in `server/oobre.rules` is that the SSH server expects the client to send `howdy` before
+initiating the conversation with the backend SSH server. This can be achieved with the `knock` python script (which
+gets installed on your machine), like so:
 
 ```console
 $ knock howdy ssh root@mybox -p 80
