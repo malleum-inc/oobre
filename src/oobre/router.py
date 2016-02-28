@@ -21,7 +21,7 @@ class Router(protocol.Factory):
 
     def buildProtocol(self, address):
         c = get_connection(address)
-        protocol = get_protocol(c)
-        if not protocol:
+        proto = get_protocol(c)
+        if not proto:
             print '*** Got unknown %s connection from %s on port %s. ***' % (address.type.upper(), address.host, c.dport)
-        return protocol
+        return proto
