@@ -1,4 +1,6 @@
 dport=80 hello=^(GET) forward=tcp:127.0.0.1:80
 dport=80 hello=SSH forward=tcp:127.0.0.1:22 knock=^howdy$
+dport=21 hello=poop exec='/bin/echo hi'
+dport=14 log=/tmp/test.log
 #factory=smtp.SmtpFactory hello=(?:helo|ehlo)(?i) dport=25,587
 #factory=echoserver.EchoFactory
