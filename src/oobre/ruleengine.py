@@ -3,9 +3,10 @@ import shlex
 from collections import defaultdict, namedtuple
 import re
 
+from oobre.protocols.execprotocol import ProcessProtocolFactory
+from oobre.protocols.logfileprotocol import LogFileProtocolFactory
 from oobre.protocols.portforwarder import ProxyFactory
 from oobre.protocols.routingprotocol import RoutingProtocolFactory
-
 
 __author__ = 'Nadeem Douba'
 __copyright__ = 'Copyright 2012, OOBRE Project'
@@ -16,7 +17,6 @@ __version__ = '0.1'
 __maintainer__ = 'Nadeem Douba'
 __email__ = 'ndouba@gmail.com'
 __status__ = 'Development'
-
 
 routing_rules = defaultdict(list)
 
@@ -60,6 +60,7 @@ class RoutingRule(object):
     actions = {
         'forward',
         'exec',
+        'log',
         'file',
         'factory',
         'knock'
@@ -111,7 +112,9 @@ class RoutingRule(object):
                 else:
                     raise ValueError('Invalid protocol forwarding option (%r). Must be either tcp or udp' % protocol)
             elif options.get('exec'):
-                raise NotImplementedError('The exec option has not been implemented yet.')
+                self._factory = ProcessProtocolFactory(options['exec'])
+            elif options.get('log'):
+                self._factory = LogFileProtocolFactory(options['log'])
             elif options.get('file'):
                 raise NotImplementedError('The file option has not been implemented yet.')
 
