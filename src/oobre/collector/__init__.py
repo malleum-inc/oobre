@@ -11,5 +11,5 @@ __status__ = 'Development'
 
 class Collector(object):
 
-    def dataReceived(self, data):
+    def dataReceived(self, source, data):
         raise NotImplementedError("Please implement this method.")
