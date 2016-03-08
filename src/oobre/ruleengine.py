@@ -4,6 +4,7 @@ from collections import defaultdict, namedtuple
 import re
 
 from oobre.protocols.execprotocol import ProcessProtocolFactory
+from oobre.protocols.fileprotocol import FileProtocolFactory
 from oobre.protocols.logfileprotocol import LogFileProtocolFactory
 from oobre.protocols.portforwarder import ProxyFactory
 from oobre.protocols.routingprotocol import RoutingProtocolFactory
@@ -122,7 +123,7 @@ class RoutingRule(object):
                     self._import_class(collector_class)
                 )
             elif options.get('file'):
-                raise NotImplementedError('The file option has not been implemented yet.')
+                self._factory = FileProtocolFactory(options.get('file'))
 
         self._criteria = RoutingCriteria(**{k: options.get(k) for k in self.criteria_options})
 
