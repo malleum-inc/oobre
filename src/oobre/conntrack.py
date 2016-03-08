@@ -38,6 +38,9 @@ class Connection(object):
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
+    def __repr__(self):
+        return '<Connection %s>' % (', '.join(['%s=%s' % (k, v) for k, v in self.__dict__.iteritems()]))
+
 
 def read_conn_track():
     connections = []
