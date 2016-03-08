@@ -63,7 +63,8 @@ class RoutingRule(object):
         'log',
         'file',
         'factory',
-        'knock'
+        'knock',
+        'collect'
     }
 
     def __init__(self, options):
@@ -115,6 +116,11 @@ class RoutingRule(object):
                 self._factory = ProcessProtocolFactory(options['exec'])
             elif options.get('log'):
                 self._factory = LogFileProtocolFactory(options['log'])
+            elif options.get('collect'):
+                module, collector_class = options['collect'].split(':', 1)
+                self._factory = self._import_class('oobre.collector.%s.CollectorProtocolFactory' % module)(
+                    self._import_class(collector_class)
+                )
             elif options.get('file'):
                 raise NotImplementedError('The file option has not been implemented yet.')
 
