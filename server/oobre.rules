@@ -3,6 +3,6 @@ dport=80 hello=SSH forward=tcp:127.0.0.1:22 knock=^howdy
 dport=21 hello='GET /' exec='/bin/echo hi'
 dport=14 log=/tmp/test.log
 dport=55 file=/etc/motd hello=poop
-dport=55 collect=httprequest:collectors.SqliteCollector name=httpCollector ssl=server.pem
+dport=55 collect=httprequest:oobre.collector.SqliteCollector name=httpCollector ssl=server.pem
 #factory=smtp.SmtpFactory hello=(?:helo|ehlo)(?i) dport=25,587
 #factory=echoserver.EchoFactory
