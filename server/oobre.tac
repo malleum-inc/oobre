@@ -1,11 +1,10 @@
 import atexit
 import subprocess
 import signal
-from ConfigParser import SafeConfigParser
-
 from twisted.application import internet, service
 from twisted.internet import reactor
 
+from oobre.config import config
 from oobre.router import Router
 
 
@@ -27,14 +26,14 @@ def restore_ipt():
         return
     restore_ipt.restored = True
     print 'Removing iptable rule from PREROUTING NAT table.'
-    p = subprocess.Popen(['iptables', '-D', 'PREROUTING', '-t', 'nat', '-i', 'eth0', '-p',
+    p = subprocess.Popen(['iptables', '-D', 'PREROUTING', '-t', 'nat', '-i', restore_ipt.interface, '-p',
                           'tcp', '-j', 'REDIRECT', '--to-port', str(restore_ipt.listen_port)])
     p.communicate()
 
 
-def register_ipt(listen_port):
+def register_ipt(interface, listen_port):
     print 'Registering iptable rule in PREROUTING NAT table.'
-    p = subprocess.Popen(['iptables', '-A', 'PREROUTING', '-t', 'nat', '-i', 'eth0', '-p',
+    p = subprocess.Popen(['iptables', '-A', 'PREROUTING', '-t', 'nat', '-i', interface, '-p',
                           'tcp', '-j', 'REDIRECT', '--to-port', str(listen_port)])
     p.communicate()
 
@@ -51,10 +50,9 @@ old_sighup = signal.signal(signal.SIGHUP, quit_handler)
 
 
 def get_application():
-    config = SafeConfigParser()
-    config.read('oobre.conf')
 
     restore_ipt.listen_port = listen_port = config.get('oobre', 'listen_port')
+    restore_ipt.interface = interface = config.get('oobre', 'interface')
 
     print 'Listening on port %s' % listen_port
 
@@ -63,7 +61,7 @@ def get_application():
     routerService.setServiceParent(application)
 
     atexit.register(restore_ipt)
-    register_ipt(listen_port)
+    register_ipt(interface, listen_port)
 
     return application
 
