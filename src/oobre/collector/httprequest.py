@@ -1,6 +1,7 @@
 from twisted.web.resource import Resource
 from twisted.web.server import Site
 from urllib import unquote_plus
+import sqlite3
 
 from oobre.conntrack import get_connection
 
@@ -19,12 +20,12 @@ __status__ = 'Development'
 class CollectorProtocol(Resource):
     isLeaf = True
 
-    def __init__(self, collector_class):
+    def __init__(self, collector):
         Resource.__init__(self)
-        self.collector = collector_class()
+        self._collector = collector
 
     def _render(self, request):
-        self.collector.dataReceived(request.channel._connection,
+        self._collector.dataReceived(request.channel._connection,
                                     unquote_plus(request.uri.lstrip('/')))
         request.setHeader('Server', 'Apache/2.4.7 (Windows)')
         return '<html><body><h1>It works!</h1></body></html>'
@@ -36,8 +37,8 @@ class CollectorProtocol(Resource):
 
 class CollectorProtocolFactory(Site):
 
-    def __init__(self, collector_class):
-        Site.__init__(self, CollectorProtocol(collector_class))
+    def __init__(self, collector_class, name=None):
+        Site.__init__(self, CollectorProtocol(collector_class(name)))
 
     def buildProtocol(self, addr):
         proto = Site.buildProtocol(self, addr)
