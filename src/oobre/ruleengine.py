@@ -3,6 +3,9 @@ import shlex
 from collections import defaultdict, namedtuple
 import re
 
+from twisted.internet.ssl import PrivateCertificate
+from twisted.protocols.tls import TLSMemoryBIOFactory
+
 from oobre.protocols.execprotocol import ProcessProtocolFactory
 from oobre.protocols.fileprotocol import FileProtocolFactory
 from oobre.protocols.logfileprotocol import LogFileProtocolFactory
@@ -21,7 +24,7 @@ __status__ = 'Development'
 
 routing_rules = defaultdict(list)
 
-RoutingCriteria = namedtuple('RoutingCriteria', ['protocol', 'src', 'dst', 'sport', 'dport', 'hello'])
+RoutingCriteria = namedtuple('RoutingCriteria', ['protocol', 'src', 'dst', 'sport', 'dport', 'hello', 'name', 'ssl'])
 
 
 class RouteMatcher(object):
@@ -55,7 +58,9 @@ class RoutingRule(object):
         'dst',
         'dport',
         'sport',
-        'hello'
+        'hello',
+        'name',
+        'ssl'
     ]
 
     actions = {
@@ -80,10 +85,13 @@ class RoutingRule(object):
 
         # Make sure there is an action that corresponds to a rule, otherwise croak.
         if not self.actions.intersection(options):
-            raise RuntimeError('You must specify one of the following options: protocol, forward, exec, or file')
+            raise RuntimeError('You must specify one of the following options: %s' % ', '.join(self.actions))
 
         # Does this protocol require a knock?
         knock = options.get('knock')
+
+        # Is SSL enabled?
+        certificate = options.get('ssl')
 
         # The passthrough option determines whether the bytes used to identify the protocol will be sent to the target
         # protocol handler or will be consumed by the initial protocol handler. Port knocking would require the initial
@@ -120,16 +128,23 @@ class RoutingRule(object):
             elif options.get('collect'):
                 module, collector_class = options['collect'].split(':', 1)
                 self._factory = self._import_class('oobre.collector.%s.CollectorProtocolFactory' % module)(
-                    self._import_class(collector_class)
+                    self._import_class(collector_class), options.get('name')
                 )
             elif options.get('file'):
                 self._factory = FileProtocolFactory(options.get('file'))
+
+            if certificate:
+                certificate = PrivateCertificate.loadPEM(file(options['ssl']).read())
+                self._factory = TLSMemoryBIOFactory(certificate.options(), False, self._factory)
 
         self._criteria = RoutingCriteria(**{k: options.get(k) for k in self.criteria_options})
 
         self._matcher = RouteMatcher(self._criteria)
 
         self._needs_hello = bool(options.get('hello'))
+
+    def __repr__(self):
+        return '<RoutingRule %s>' % repr(self._criteria)
 
     @staticmethod
     def _import_class(name):
