@@ -24,15 +24,11 @@ class CollectorProtocol(Resource):
         Resource.__init__(self)
         self._collector = collector
 
-    def _render(self, request):
+    def render(self, request):
         self._collector.dataReceived(request.channel._connection,
                                     unquote_plus(request.uri.lstrip('/')))
         request.setHeader('Server', 'Apache/2.4.7 (Windows)')
         return '<html><body><h1>It works!</h1></body></html>'
-
-    def __getattr__(self, item):
-        if item.startswith('render_'):
-            return self._render
 
 
 class CollectorProtocolFactory(Site):
